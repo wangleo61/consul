@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/armon/go-metrics"
 	"golang.org/x/time/rate"
 
 	"github.com/hashicorp/consul/agent/connect/ca"
@@ -36,6 +37,7 @@ func (s *Server) startConnectLeader(ctx context.Context) error {
 
 	s.caManager.Start(ctx)
 	s.leaderRoutineManager.Start(ctx, caRootPruningRoutineName, s.runCARootPruning)
+	s.leaderRoutineManager.Start(ctx, caRootMetricRoutineName, emitCAExpirationMetrics(s))
 
 	return s.startIntentionConfigEntryMigration(ctx)
 }
@@ -137,6 +139,47 @@ func (s *Server) pruneCARoots() error {
 	args.Roots = newRoots
 	_, err = s.raftApply(structs.ConnectCARequestType, args)
 	return err
+}
+
+func emitCAExpirationMetrics(s *Server) func(ctx context.Context) error {
+	key := []string{"mesh", "root-ca", "expiry"}
+	labels := []metrics.Label{
+		{Name: "datacenter", Value: s.config.Datacenter},
+	}
+
+	emit := func() error {
+		if !s.config.ConnectEnabled {
+			return nil
+		}
+
+		state := s.fsm.State()
+		_, root, err := state.CARootActive(nil)
+		if err != nil {
+			return fmt.Errorf("failed to retrieve root CA: %w", err)
+		}
+
+		expiry := time.Until(root.NotAfter) / time.Second
+		metrics.SetGaugeWithLabels(key, float32(expiry), labels)
+		return nil
+	}
+
+	return func(ctx context.Context) error {
+		ticker := time.NewTicker(time.Hour)
+		defer ticker.Stop()
+
+		for {
+			select {
+			case <-ctx.Done():
+				return nil
+			case <-ticker.C:
+				if err := emit(); err != nil {
+					s.loggers.
+						Named(logging.Connect).
+						Info("failed to emit root CA expiry metric", "error", err)
+				}
+			}
+		}
+	}
 }
 
 // retryLoopBackoff loops a given function indefinitely, backing off exponentially
