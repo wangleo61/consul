@@ -3,6 +3,7 @@
 
 // temporary component debugging setup
 @import 'consul-ui/components/main-nav-vertical/debug';
+@import 'consul-ui/components/inline-alert/debug';
 
 html.is-debug body > .brand-loader {
   display: none !important;
