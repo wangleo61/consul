@@ -1,0 +1,14 @@
+#docfy-demo-preview-inline-alert {
+  p.success {
+    @extend %inline-alert-success;
+  }
+  p.error {
+    @extend %inline-alert-error;
+  }
+  p.info {
+    @extend %inline-alert-info;
+  }
+  p.warning {
+    @extend %inline-alert-warning;
+  }
+}

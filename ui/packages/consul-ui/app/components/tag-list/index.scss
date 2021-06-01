@@ -1,0 +1,6 @@
+@import './skin';
+@import './layout';
+.tag-list,
+td.tags {
+  @extend %tag-list;
+}

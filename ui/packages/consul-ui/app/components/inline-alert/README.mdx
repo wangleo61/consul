@@ -1,0 +1,44 @@
+---
+state: needs-love
+---
+# inline-alert
+
+CSS component for inline informational/warning/error alerts/notices. Mainly
+used for form alerts/notices.
+
+Potentially an improvement here could be that this could make use of `%horizontal-kv-list`, and do we really need a placeholder per state, can we just use a class?
+
+```hbs preview-template
+<p class={{or this.type 'info'}} role="alert">
+  Alert me to something!
+</p>
+
+<figure>
+  <figcaption>Provide a widget to change the <code>class</code></figcaption>
+
+  <select
+    onchange={{action (mut this.type) value="target.value"}}
+  >
+    <option>info</option>
+    <option>success</option>
+    <option>warning</option>
+    <option>error</option>
+  </select>
+
+</figure>
+```
+
+```css
+  p.success {
+    @extend %inline-alert-success;
+  }
+  p.error {
+    @extend %inline-alert-error;
+  }
+  p.info {
+    @extend %inline-alert-info;
+  }
+  p.warning {
+    @extend %inline-alert-warning;
+  }
+```
