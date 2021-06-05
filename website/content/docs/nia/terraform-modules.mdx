@@ -11,10 +11,20 @@ Consul-Terraform-Sync automates execution of Terraform modules through tasks. A 
 
 ## Module Specifications
 
-Compatible modules for Consul-Terraform-Sync follow the [standard module](https://www.terraform.io/docs/modules/index.html#standard-module-structure) structure. Modules can use syntax supported by Terraform version 0.13 and newer. There are **2 required elements for compatibility:**
+Compatible modules for Consul-Terraform-Sync follow the [standard module](https://www.terraform.io/docs/modules/index.html#standard-module-structure) structure. Modules can use syntax supported by Terraform version 0.13 and newer.
+
+### Compatibility Requirements
+
+Below are the two required elements for module compatibility with Consul-Terraform-Sync
 
 1. **Root module** - Terraform has one requirement for files in the root directory of the repository to function as the primary entrypoint for the module. It should encapsulate the core logic to be used by Consul-Terraform-Sync for task automation. `main.tf` is the recommended filename for the main file where resources are created.
 2. [**`services` input variable**](#services-variable) - Consul-Terraform-Sync requires all modules to have the following input variable declared within the root module. The declaration of the `services` variable can be included at the top of the suggested `variables.tf` file where other input variables are commonly declared. This variable functions as the response object from the Consul catalog API and surfaces network information to be consumed by the module. It is structured as a map of objects.
+
+### Optional input variables
+
+Below are additional input variables provided by Consul-Terraform-Sync that may be included in your module alongside the `services` input variable. Each input variable contains more details on when it is appropriate to include them in your module.
+
+ - [**`catalog_services` input variable**](#catalog-services-variable) - This variable can optionally included for modules that have a [catalog-services type condition](/docs/nia/tasks#catalog-services-condition). The declaration of the `catalog_services` variable should be included at the top of the suggested `variables.tf` file along with the required `services` input variable and other input variables are declared. This variable functions as the response object from the Consul catalog list services API and surfaces.
 
 ## How to Create a Compatible Terraform Module
 
@@ -35,6 +45,8 @@ resource "local_file" "consul_services" {
   filename = "consul_services.txt"
 }
 ```
+
+Something important to consider before authoring your module is deciding the condition in which it will trigger. This will allow you to potentially include other types of CTS input variables in your module. It will also help inform your README documentation and how users will configure their task given your module.
 
 ### Services variable
 
@@ -86,6 +98,23 @@ variable "services" {
   )
 }
 ```
+
+### Catalog Services variable
+
+If you are creating a module with the catalog-service condition type, then you have the option to add the catalog_services variable, which contains service registration and tag information. If your module would benefit consuming this information, you can copy the `catalog_services` variable declaration to your `variables.tf` file in addition to the other variables.
+
+```hcl
+variable "catalog_services" {
+  description = "Consul catalog service names and tags monitored by Consul Terraform Sync"
+  type = map(list(string))
+}
+```
+
+The keys of the `catalog_services` map are the services that are registered with Consul at the given datacenter. The value for each service is a list of all known tags for that services.
+
+We recommend that if you make a module with with a catalog-service condition, that you document this in the Readme. This way, users that want to configure a task with your module will know to configure a [condition](/docs/nia/configuration#condition) block for type catalog-services.
+
+Similarly, if you include the `catalog_services` variable in your module, we recommend that you document this usage in the README. Users of your module will then know to set the catalog-services condition [`source_includes_var`](/docs/nia/configuration#source_includes_var) to be true. When this field is set to true, Consul-Terraform-Sync will declare the `catalog_services` variable in the generated root module, and pass the variable to a child module. Therefore, if this field is configured inconsistently, Consul-Terraform-Sync will error and exit.
 
 ### Module Input Variables
 

@@ -30,7 +30,23 @@ A task can be either enabled or disabled using the [task cli](/docs/nia/cli/task
 
 ## Task Execution
 
-An enabled task is executed when any change of information for services the task is configured for is detected from the Consul catalog. Execution could include one or more changes to service values, like IP address, added or removed service instance, or tags. A complete list of values that would cause a task to run are expanded below:
+An enabled task can be configured to monitor and execute on different types of conditions. For example, on changes to services ([services condition](/docs/nia/tasks#services-condition)) or on service registration and deregistration ([catalog-services condition](/docs/nia/tasks#catalog-services-condition)).
+
+A task can also monitor but not execute on other variables that are simply included to provide additional information to the task's module. For example, a task with a catalog-services condition may execute on registration changes but additionally monitor service instance information for IP information. The details of what values are monitored and what values can execute the task are determined by the module.
+
+Below are details on the types of execution conditions that Consul-Terraform-Sync supports.
+
+### Services Condition
+
+
+TODO: removeAn enabled task is executed when any change of information for services the task is configured for is detected from the Consul catalog. Execution could include one or more changes to service values, like IP address, added or removed service instance, or tags. A complete list of values that would cause a task to run are expanded below:
+
+
+Services condition is the default condition to trigger a task to execute. Tasks with a services condition monitor and execute on changes to a list of configured services.
+
+In order to configure a task with a services condition, the list of services to trigger the task must be configured in the task's [`services`](/docs/nia/configuration#services). The task `condition` block can be left unconfigured for default values. See the [services condition configuration](/docs/nia/configuration#services-condition) section for more details.
+
+A task specifically would execute on changes to [Health List Nodes For Service API](/api-docs/health#list-nodes-for-service) for the configured services. Task execution can happen on one or more changes to service values, like IP address, added or removed service instance, or tags. A complete list of values that would cause a task to run are expanded below:
 
 | Attribute               | Description                                                                                       |
 | ----------------------- | ------------------------------------------------------------------------------------------------- |
@@ -49,7 +65,7 @@ An enabled task is executed when any change of information for services the task
 | `node_tagged_addresses` | List of explicit LAN and WAN IP addresses for the agent                                           |
 | `node_meta`             | List of user-defined metadata key/value pairs for the node                                        |
 
-Consul-Terraform-Sync automatically generates any files needed to execute the network driver for each task. See [network drivers](/docs/nia/network-drivers) for more details on the files generated for the Terraform driver.
+
 ### Catalog-Services Condition
 
 Tasks with a catalog-services condition monitor and execute on service registration changes for services that satisfy the condition configuration. Service registration changes specifically are service registration and deregistration where service registration occurs on the first service instance registration, and service deregistration occurs on the last service instance registration. Tasks with a catalog-services condition may optionally, depending on the module, monitor but not execute on service instance information.
